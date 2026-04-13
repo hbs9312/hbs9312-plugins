@@ -47,7 +47,7 @@
     },
     {
       "name": "ghflow",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "GitHub 이슈·PR·리뷰 워크플로우 스킬 모음 (create-issue, pick-issue, draft-pr, create-pr, review-pr, clear-issue). SessionStart 훅이 이슈/PR 템플릿을 미리 받아둡니다.",
       "author": {
         "name": "hbs9312"

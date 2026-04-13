@@ -37,6 +37,15 @@ PR_TEMPLATE_PATHS = [
     "pull_request_template.md",
 ]
 
+PR_TEMPLATE_DIRS = [
+    ".github/PULL_REQUEST_TEMPLATE",
+    ".github/pull_request_template",
+    "docs/PULL_REQUEST_TEMPLATE",
+    "docs/pull_request_template",
+    "PULL_REQUEST_TEMPLATE",
+    "pull_request_template",
+]
+
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
 
 
@@ -143,18 +152,53 @@ def fetch_issue_templates(org: str, repo: str) -> list[dict]:
 
 
 def fetch_pr_templates(org: str, repo: str) -> list[dict]:
-    """Return one PR template per source (current repo first, then org)."""
-    results: list[dict] = []
+    """Fetch PR templates from both the current repo and the org's .github repo.
+
+    Handles both GitHub-supported layouts:
+    - Single file (`.github/PULL_REQUEST_TEMPLATE.md`)
+    - Multiple templates in a directory (`.github/PULL_REQUEST_TEMPLATE/*.md`)
+
+    Source precedence: current repo is checked first; if it yields any
+    templates, the org fallback is skipped so we don't mix incompatible
+    template sets across sources.
+    """
     sources = [
         (f"{org}/{repo}", f"{org}/{repo}"),
         (f"{org}/.github", f"{org}/.github"),
     ]
+    results: list[dict] = []
     for owner_repo, tag in sources:
+        found_for_source: list[dict] = []
+
+        # Single-file form
         for p in PR_TEMPLATE_PATHS:
             content = gh_api_content(f"repos/{owner_repo}/contents/{p}")
             if content:
-                results.append({"source": tag, "path": p, "body": content})
-                break
+                found_for_source.append({"source": tag, "path": p, "body": content})
+                break  # one single-file template is enough
+
+        # Directory form (multiple templates)
+        for d in PR_TEMPLATE_DIRS:
+            items = gh_api_list(f"repos/{owner_repo}/contents/{d}")
+            if not items:
+                continue
+            for item in items:
+                if not isinstance(item, dict) or item.get("type") != "file":
+                    continue
+                name = item.get("name", "")
+                if not name.endswith(".md"):
+                    continue
+                content = gh_api_content(f"repos/{owner_repo}/contents/{d}/{name}")
+                if content:
+                    found_for_source.append(
+                        {"source": tag, "path": f"{d}/{name}", "body": content}
+                    )
+            if found_for_source:
+                break  # stop at the first directory location that yields files
+
+        if found_for_source:
+            results.extend(found_for_source)
+            break  # current repo wins — don't fall back to org
     return results
 
 

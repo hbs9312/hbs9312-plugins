@@ -117,9 +117,10 @@ TEMPLATES_FILE="/tmp/ghflow/${SLUG}/templates.json"
 ```
 
 **Selection rules:**
-1. If `pr_templates` has an entry sourced from the **current repo** (`source == "{org}/{repo}"`), use it.
-2. Otherwise, use the entry sourced from the org's `.github` repo.
-3. If `pr_templates` is empty or the templates file does not exist:
+1. The hook already picks a single source: current repo wins over org `.github` — you will only ever see entries from one source in `pr_templates`.
+2. **Single entry** (single-file form like `.github/PULL_REQUEST_TEMPLATE.md`): use it directly.
+3. **Multiple entries** (directory form like `.github/PULL_REQUEST_TEMPLATE/*.md`): infer the best match from the user's `[message]` / branch name / commits, then confirm the choice in Step 7's preview. If inference is ambiguous, present the list (template name derived from `path` filename, e.g. `feature.md` → "Feature") and let the user pick before filling in.
+4. If `pr_templates` is empty or the templates file does not exist:
    - Inform the user that no PR template was found (hook may not have run, gh may be unauthenticated, or no template exists).
    - Ask whether to proceed with a freeform body generated from commits/diff, or abort.
 
