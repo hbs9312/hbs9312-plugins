@@ -3,15 +3,16 @@ name: create-pr
 description: >
   This skill should be used when the user asks to "create pr", "make pr", "open pull request",
   "PR 올려줘", "PR 만들어줘", "풀리퀘 생성", or invokes /create-pr.
-  It creates a GitHub Pull Request using the organization's PR template from the .github repository.
-  The template is fetched via GitHub API (no cloning required) and filled in based on the actual changes.
-  Usage: /create-pr [base-branch] [--draft] [message]
+  It creates a GitHub Pull Request using the PR template fetched at session start by the
+  ghflow SessionStart hook (from the current repo and the org's .github repo).
+  Usage: /create-pr [base-branch] [--draft] [--assignee <login>] [message]
 ---
 
 # Create PR Skill
 
-Create a GitHub Pull Request using the organization's `.github` repository PR template.
-The template is fetched via `gh api` and filled in based on the branch's actual changes.
+Create a GitHub Pull Request using a PR template that was fetched at session start by the
+ghflow SessionStart hook. This skill does **not** fetch or cache templates itself — it reads
+the hook output directly.
 
 ## Arguments
 
@@ -90,65 +91,41 @@ Collect information needed to fill in the PR:
    git diff --name-status {base}...HEAD
    ```
 
-### Step 4: Fetch PR Template
+### Step 4: Load PR Template from Hook Output
 
-#### 4-1. Check Memory
+The ghflow SessionStart hook has already fetched PR templates from both the current repo and
+the org's `.github` repo, and written them to a JSON file. This skill does not fetch or cache
+templates — it reads the hook output directly.
 
-Read the auto memory file at `~/.claude/projects/{current-project}/memory/MEMORY.md` and check if a
-`## PR Template` section exists with a cached template path.
-
-#### 4-2. If Template Path Found in Memory
-
-Use the cached information (org name, template path) to fetch the template:
+**Read path:**
 ```bash
-gh api repos/{org}/.github/contents/{template_path} -q '.content' | base64 -d
+REPO_ID=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+SLUG=$(echo "$REPO_ID" | sed 's|/|__|')
+TEMPLATES_FILE="/tmp/ghflow/${SLUG}/templates.json"
 ```
 
-If the API call fails (404, etc.), fall through to step 4-3.
+**File structure (relevant subset):**
+```json
+{
+  "repo": "org/repo",
+  "fetched_at": "...",
+  "pr_templates": [
+    { "source": "org/repo",   "path": ".github/pull_request_template.md", "body": "..." },
+    { "source": "org/.github","path": "workflow-templates/PULL_REQUEST_TEMPLATE.md", "body": "..." }
+  ]
+}
+```
 
-#### 4-3. If Template Path NOT Found in Memory
-
-1. **Detect the organization**:
-   ```bash
-   gh repo view --json owner -q '.owner.login'
-   ```
-
-2. **Search for PR template** in the org's `.github` repo. Try these paths in order:
-   - `workflow-templates/PULL_REQUEST_TEMPLATE.md`
-   - `workflow-templates/pull_request_template.md`
-   - `.github/PULL_REQUEST_TEMPLATE.md`
-   - `.github/pull_request_template.md`
-   - `PULL_REQUEST_TEMPLATE.md`
-   - `pull_request_template.md`
-
-   For each path:
-   ```bash
-   gh api repos/{org}/.github/contents/{path} -q '.content' | base64 -d
-   ```
-   Use the first one that returns successfully (HTTP 200).
-
-3. **If no template found** in the org's `.github` repo, also check the current repo itself:
-   - `.github/PULL_REQUEST_TEMPLATE.md`
-   - `.github/pull_request_template.md`
-   - `docs/pull_request_template.md`
-   - `PULL_REQUEST_TEMPLATE.md`
-
-4. **If still no template found**, ask the user whether to:
-   - Proceed without a template (generate body from commits/diff)
-   - Provide a custom template path
-
-5. **Save to memory**: Once a template is found, save the org name and template path to the project's
-   `MEMORY.md` under a `## PR Template` section:
-   ```markdown
-   ## PR Template
-   - Organization: {org}
-   - Source: {org}/.github (or current repo)
-   - Path: {template_path}
-   ```
+**Selection rules:**
+1. If `pr_templates` has an entry sourced from the **current repo** (`source == "{org}/{repo}"`), use it.
+2. Otherwise, use the entry sourced from the org's `.github` repo.
+3. If `pr_templates` is empty or the templates file does not exist:
+   - Inform the user that no PR template was found (hook may not have run, gh may be unauthenticated, or no template exists).
+   - Ask whether to proceed with a freeform body generated from commits/diff, or abort.
 
 ### Step 5: Fill In the Template
 
-Analyze the commits and diff gathered in Step 3, then fill in the PR template intelligently:
+Analyze the commits and diff gathered in Step 3, then fill in the selected template's `body` intelligently:
 
 - Replace placeholder sections (e.g., `## Summary`, `## Changes`, `## Description`) with actual content
   derived from the commits and code changes.
@@ -173,6 +150,7 @@ Create a concise PR title (under 70 characters) based on the changes:
 Present the following to the user for review using the AskUserQuestion tool:
 
 - **Title**: The generated PR title
+- **Template source**: Which repo the template came from (current repo vs org `.github`)
 - **Base branch**: The target branch
 - **Assignee**: The resolved assignee (e.g., `@me` or the specified username)
 - **Body**: The filled-in template content (show a summary, not the full body if too long)
@@ -199,9 +177,8 @@ After successful creation, display the PR URL to the user.
 
 ## Guidelines
 
-- Always use `gh api` to fetch templates — never clone the `.github` repo.
-- The `base64 -d` command decodes the GitHub API's base64-encoded file content.
-- If the GitHub API rate limit is hit, inform the user and suggest trying again later.
+- Never fetch templates yourself — always read from `/tmp/ghflow/<slug>/templates.json` produced by the SessionStart hook.
+- Template freshness is **session-scoped**: if the remote template changes during the session, the change is not reflected. The user must restart the session to pick up updates.
 - Respect the template's original formatting and structure when filling it in.
 - Do not modify checkbox items — leave them for the user to manage.
 - If the template contains sections that don't apply to the current changes, write "N/A" or leave them empty rather than removing them.
