@@ -1,15 +1,15 @@
-# claude-plugins
+# hbs9312-plugins
 
 hbs9312가 관리하는 Claude Code 플러그인 통합 마켓플레이스.
 
 ## 설치
 
 ```bash
-/plugin marketplace add hbs9312/claude-plugins
-/plugin install specflow@claude-plugins
-/plugin install frontflow@claude-plugins
-/plugin install backflow@claude-plugins
-/plugin install meeting-prep@claude-plugins
+/plugin marketplace add hbs9312/hbs9312-plugins
+/plugin install specflow@hbs9312-plugins
+/plugin install frontflow@hbs9312-plugins
+/plugin install backflow@hbs9312-plugins
+/plugin install meeting-prep@hbs9312-plugins
 ```
 
 ## 포함된 플러그인
@@ -24,7 +24,7 @@ hbs9312가 관리하는 Claude Code 플러그인 통합 마켓플레이스.
 ## 구조
 
 ```
-claude-plugins/
+hbs9312-plugins/
 ├── .claude-plugin/
 │   └── marketplace.json
 └── plugins/
@@ -45,7 +45,7 @@ claude-plugins/
 /plugin marketplace remove frontflow
 /plugin marketplace remove backflow
 /plugin marketplace remove meeting-prep
-/plugin marketplace add hbs9312/claude-plugins
+/plugin marketplace add hbs9312/hbs9312-plugins
 ```
 
 ## License
