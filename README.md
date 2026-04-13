@@ -10,6 +10,7 @@ hbs9312가 관리하는 Claude Code 플러그인 통합 마켓플레이스.
 /plugin install frontflow@hbs9312-plugins
 /plugin install backflow@hbs9312-plugins
 /plugin install meeting-prep@hbs9312-plugins
+/plugin install ghflow@hbs9312-plugins
 ```
 
 ## 포함된 플러그인
@@ -20,6 +21,7 @@ hbs9312가 관리하는 Claude Code 플러그인 통합 마켓플레이스.
 | [frontflow](./plugins/frontflow) | 1.2.0 | 프론트엔드 구현 워크플로우. Figma → 코드를 바텀업으로 구축 |
 | [backflow](./plugins/backflow) | 0.1.0 | specflow 산출물 기반 백엔드 구현 워크플로우. 스키마 → 리포지토리 → 서비스 → 컨트롤러 → 미들웨어 → 통합 |
 | [meeting-prep](./plugins/meeting-prep) | 0.1.0 | 기획서 분석과 구현 현황을 병렬 분석하여 회의 준비 문서를 자동 생성 |
+| [ghflow](./plugins/ghflow) | 0.1.0 | GitHub 이슈·PR·리뷰 워크플로우 스킬 모음 (create-issue / pick-issue / draft-pr / create-pr / review-pr / clear-issue) |
 
 ## 구조
 
@@ -31,7 +33,8 @@ hbs9312-plugins/
     ├── specflow/
     ├── frontflow/
     ├── backflow/
-    └── meeting-prep/
+    ├── meeting-prep/
+    └── ghflow/
 ```
 
 각 플러그인의 상세 문서는 해당 디렉토리의 README를 참고하세요.

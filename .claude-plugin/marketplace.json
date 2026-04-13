@@ -44,6 +44,15 @@
         "name": "hbs9312"
       },
       "source": "./plugins/meeting-prep"
+    },
+    {
+      "name": "ghflow",
+      "version": "0.1.0",
+      "description": "GitHub 이슈·PR·리뷰 워크플로우 스킬 모음 (create-issue, pick-issue, draft-pr, create-pr, review-pr, clear-issue).",
+      "author": {
+        "name": "hbs9312"
+      },
+      "source": "./plugins/ghflow"
     }
   ]
 }
