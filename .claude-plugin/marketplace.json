@@ -1,0 +1,49 @@
+{
+  "name": "claude-plugins",
+  "owner": {
+    "name": "hbs9312",
+    "url": "https://github.com/hbs9312"
+  },
+  "metadata": {
+    "description": "hbs9312의 Claude Code 플러그인 모음. 명세서 작성(specflow), 프론트엔드 구현(frontflow), 백엔드 구현(backflow), 회의 준비(meeting-prep) 워크플로우를 하나의 마켓플레이스로 제공합니다.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "specflow",
+      "version": "1.3.0",
+      "description": "에이전트 기반 개발 명세서 생성·검증·수정 워크플로우. PRD에서 기능 명세, 기술 명세, 와이어프레임, 화면설계서, 테스트 명세, 구현 계획까지 자동 생성합니다.",
+      "author": {
+        "name": "hbs9312"
+      },
+      "source": "./plugins/specflow"
+    },
+    {
+      "name": "frontflow",
+      "version": "1.2.0",
+      "description": "프론트엔드 구현 워크플로우. Figma → 코드를 바텀업으로 구축합니다.",
+      "author": {
+        "name": "hbs9312"
+      },
+      "source": "./plugins/frontflow"
+    },
+    {
+      "name": "backflow",
+      "version": "0.1.0",
+      "description": "specflow 산출물 기반 백엔드 구현 워크플로우. 스키마, 리포지토리, 서비스, 컨트롤러, 미들웨어, 통합까지 바텀업으로 구축합니다.",
+      "author": {
+        "name": "hbs9312"
+      },
+      "source": "./plugins/backflow"
+    },
+    {
+      "name": "meeting-prep",
+      "version": "0.1.0",
+      "description": "기획서 분석과 구현 현황을 병렬 분석하여 회의 준비 문서를 자동 생성하는 플러그인.",
+      "author": {
+        "name": "hbs9312"
+      },
+      "source": "./plugins/meeting-prep"
+    }
+  ]
+}
