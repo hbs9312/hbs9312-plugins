@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth login)",
+      "Bash(gh auth status:*)",
+      "Bash(gh api user:*)",
+      "Bash(gh api repos/*)",
+      "Bash(gh api graphql:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue develop:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr checkout:*)"
+    ]
+  }
+}
