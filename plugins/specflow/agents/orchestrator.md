@@ -21,6 +21,8 @@ skills:
   - validate-boundary
   - patch
   - regenerate
+  - revise
+  - extend
   - decompose
   - analyze-deps
   - estimate
@@ -119,3 +121,111 @@ Phase당 최대 4회 (generate 1 + patch 1 + regenerate 2)
 ```
 
 모드명을 표시하여 사용자가 어떤 경로로 진행 중인지 알 수 있게 합니다.
+
+---
+
+## 수정 워크플로우 (revise)
+
+사용자가 **기존 명세서의 내용 수정**을 요청할 때 진입합니다.
+트리거: "수정해줘", "피드백 반영", "고쳐줘", "변경해줘" + 대상 문서
+
+### 판별 기준
+
+- 사용자가 특정 문서를 지목하고 수정 요청을 함
+- 새 PRD/요구사항이 아닌 기존 내용에 대한 피드백
+
+### revise 흐름
+
+```
+/specflow:revise [대상 문서] [피드백]
+  → /specflow:validate → 분기(R1/R2)
+  → 승인
+  → /specflow:change-impact [대상 문서] [변경 내용]
+  → 영향받는 하위 문서에 대해:
+      /specflow:revise [하위 문서] [change-impact 결과에서 해당 문서의 action_needed]
+      → validate → 승인
+```
+
+### 분기 규칙
+
+revise 후 validate 결과:
+- critical=0 AND total=0 → PASS → change-impact로 진행
+- critical=0 AND total≤5 → /specflow:patch → 재검증 → change-impact
+- critical≥1 OR total>5 → /specflow:regenerate → 재검증 → change-impact
+
+### 하위 전파 규칙
+
+change-impact 결과에서 `action_needed`가 있는 문서만 처리:
+- 수정 범위가 작으면 (항목 3개 이하) → revise로 처리
+- 수정 범위가 크면 (항목 4개 이상) → 사용자에게 확인 후 revise 또는 regenerate
+
+### 진행 상태 표시
+
+```
+[🔄] revise: FS-2026-001 수정 중
+[⏳] validate: 검증 대기
+[⏳] change-impact: 영향 분석 대기
+[⏳] 하위 문서 전파: 대기 중
+```
+
+---
+
+## 확장 워크플로우 (extend)
+
+사용자가 **기존 명세서에 새 기능/범위를 추가**할 때 진입합니다.
+트리거: "기능 추가", "요구사항 추가", "스펙 확장", "새 PRD 반영" + 대상 문서
+
+### 판별 기준
+
+- 새 PRD 또는 새 요구사항이 제공됨
+- 기존 문서에 새 항목(US, BR 등)을 추가해야 함
+- revise와의 구분: **새 ID가 다수 생성**되면 extend, 기존 ID 수정이면 revise
+
+### extend 흐름
+
+```
+Phase E1: /specflow:extend [대상 FS] [새 요구사항]
+          → /specflow:validate → 분기(R1/R2) → 승인
+
+Phase E2: /specflow:change-impact [FS] [extension_log]
+          → 영향받는 하위 문서 목록 확인
+
+Phase E3: 하위 문서 incremental generation (순차)
+          WF: /specflow:generate-wf [FS] --base [기존 WF]
+              → validate + validate-cross → 승인
+          TS: /specflow:generate-ts [FS] [WF] --base [기존 TS]
+              → validate + validate-cross → 승인
+          UI: /specflow:extract-ui [WF] [디자인] --base [기존 UI]
+              → validate + validate-cross → 승인
+          QA: /specflow:generate-qa [FS] [TS] [UI] --base [기존 QA]
+              → validate + validate-cross → 승인
+```
+
+### 분기 규칙
+
+각 Phase의 validate 결과에 기존 분기 규칙 동일 적용:
+- critical=0 AND total=0 → PASS
+- critical=0 AND total≤5 → /specflow:patch
+- critical≥1 OR total>5 → /specflow:regenerate
+
+### 재시도 한도
+
+Phase E1: 최대 4회 (extend 1 + patch 1 + regenerate 2)
+Phase E3 각 문서: 최대 4회 (generate 1 + patch 1 + regenerate 2)
+초과 시 사람 개입 요청
+
+### incremental 건너뛰기
+
+change-impact에서 영향 없음(`no_impact`)인 하위 문서는 건너뜁니다.
+예: FS에 비기능 요구사항만 추가 → WF/UI 건너뜀, TS/QA만 incremental
+
+### 진행 상태 표시
+
+```
+[✅] Phase E1: FS-2026-001 확장 완료 (US-008~012 추가)
+[✅] Phase E2: 영향 분석 완료 — WF, TS, QA 업데이트 필요
+[🔄] Phase E3: incremental generation (2/3)
+  [✅] WF-2026-001: 화면 3개 추가
+  [🔄] TS-2026-001: API 2개 추가 중 (라운드 1/4)
+  [⏳] QA-2026-001: 대기 중
+```
