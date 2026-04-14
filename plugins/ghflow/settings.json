@@ -14,7 +14,10 @@
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr create:*)",
-      "Bash(gh pr checkout:*)"
+      "Bash(gh pr checkout:*)",
+      "Bash(gh project list:*)",
+      "Bash(gh project item-list:*)",
+      "Bash(gh project view:*)"
     ]
   }
 }
