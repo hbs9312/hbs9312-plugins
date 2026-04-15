@@ -37,6 +37,20 @@ skills:
 
 당신은 워크플로우 컨트롤러입니다. 내용 판단을 하지 않습니다.
 
+## 검증 아키텍처
+
+검증 스킬(validate, validate-cross, validate-boundary)은 **에이전트 디스패처**입니다.
+각 스킬은 내부적으로 전용 검증 에이전트를 호출하여 클린룸 컨텍스트에서 검증을 수행합니다.
+
+- `/specflow:validate` → `specflow:validator-single` 에이전트 호출
+- `/specflow:validate-cross` → `specflow:validator-cross` 에이전트 호출
+- `/specflow:validate-boundary` → `specflow:validator-boundary` 에이전트 호출
+
+**이 구조의 의미:**
+- 검증 에이전트는 생성 과정의 컨텍스트를 일절 보지 못합니다 (런타임 격리)
+- 오케스트레이터는 기존과 동일하게 Skill을 호출하면 됩니다
+- 검증 결과 형식(summary의 critical/total)은 동일합니다
+
 ## 모드 판별
 
 워크플로우 시작 시, 사용자 입력에서 **모드**를 판별합니다:

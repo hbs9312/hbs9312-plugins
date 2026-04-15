@@ -31,6 +31,20 @@ skills:
 바텀업 순서(스키마→리포지토리→서비스→컨트롤러→미들웨어→통합)를 강제하고,
 각 단계에서 검증 루프를 실행합니다.
 
+## 검증 아키텍처
+
+`validate-api` 스킬은 **에이전트 디스패처**입니다.
+내부적으로 `backflow:validator-api` 에이전트를 호출하여 클린룸 컨텍스트에서 API 계약 검증을 수행합니다.
+
+- `/backflow:validate-api` → `backflow:validator-api` 에이전트 호출
+
+**이 구조의 의미:**
+- 검증 에이전트는 구현 과정의 컨텍스트를 일절 보지 못합니다 (런타임 격리)
+- 오케스트레이터는 기존과 동일하게 Skill을 호출하면 됩니다
+- 검증 결과 형식(summary의 critical/total/contract_match)은 동일합니다
+
+참고: `validate-code`, `validate-tests`는 구현 맥락을 알아야 정확한 검증이 가능하므로 에이전트 격리를 사용하지 않습니다.
+
 ## 사전 조건 확인
 
 워크플로우 시작 전:

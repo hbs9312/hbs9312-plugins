@@ -3,51 +3,30 @@ name: validate-boundary
 description: 문서가 자신의 영역 경계를 침범하지 않는지 검증합니다. "경계 검증" 요청 시 사용.
 argument-hint: [검증할 문서 파일 경로]
 disable-model-invocation: true
-context: fork
-allowed-tools: Read Grep Glob Write
-model: claude-opus-4-6
-effort: high
+allowed-tools: Read Agent
 ---
 
-# 경계 침범 검증 (V3)
+# 경계 침범 검증 (V3) — 에이전트 디스패처
 
-ultrathink
+이 스킬은 클린룸 경계 검증 에이전트를 호출하는 디스패처입니다.
+직접 검증을 수행하지 않습니다. 모든 판단은 격리된 에이전트가 합니다.
 
-문서 간 책임 경계의 감시자입니다. `context: fork` 격리 실행.
+## 에이전트 호출
 
-## 컨텍스트
+Agent 도구로 `specflow:validator-boundary` 에이전트를 호출합니다.
 
-- `${CLAUDE_SKILL_DIR}/../../context/conventions.md` 를 Read로 읽으세요
-- `${CLAUDE_SKILL_DIR}/../../context/glossary.md` 를 Read로 읽으세요 — 도메인 용어 예외 판단에 필요
+프롬프트 구성:
 
-## 입력: $ARGUMENTS 문서를 Read. ID 접두사로 유형 판별.
-
-## 경계 정의
-
-### FS에서 기술 침범 탐지
-키워드: PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, Pub/Sub, Kafka, RabbitMQ, WebSocket, gRPC, GraphQL, Cloud Run, GCS, S3, EC2, Lambda, Kubernetes, Docker, Terraform, nginx, 테이블, 스키마, 인덱스, FK, 마이그레이션, 커넥션풀, 엔드포인트, REST, HTTP, POST, GET, DELETE, PUT, 벡터, 임베딩, 큐, 토픽, 워커, 배치, 크론잡, SHA256, JWT, OAuth
-★ glossary.md 도메인 용어는 예외
-
-### TS에서 비즈니스 침범 탐지
-패턴: "사용자가 원하는", "비즈니스 목표는", "이 기능이 필요한 이유", UX 카피("~해 주세요"), 사용자 감정("혼란을 느끼지 않도록", "직관적으로")
-
-### WF에서 디자인 침범 탐지
-패턴: #hex, rgb(, hsl(, $color-*, font-size, font-weight, Npx, $text-*, Nms, ease-in, ease-out, transition, animation, $spacing-*
-
-## 출력
-
-```yaml
-검증 유형: V3 (경계 침범)
-findings:
-  - id: "V3-001"
-    severity: warning
-    location: "{섹션}"
-    content: "{침범 원문}"
-    violation: "{경계 유형}"
-    glossary_exception: false
-    suggestion: "{수정 제안}"
-summary:
-  glossary_exceptions_applied: {N}
+```
+검증 공통 원칙: ${CLAUDE_SKILL_DIR}/../../context/validation-common.md
+문서 컨벤션: ${CLAUDE_SKILL_DIR}/../../context/conventions.md
+용어집: ${CLAUDE_SKILL_DIR}/../../context/glossary.md
+검증 대상: {$ARGUMENTS의 문서 절대 경로}
+결과 저장: specs/reviews/{문서ID}-V3-{timestamp}.md
 ```
 
-## 저장: specs/reviews/{문서ID}-V3-{timestamp}.md
+timestamp 형식: `YYYYMMDD-HHmmss`
+
+## 결과 전달
+
+에이전트가 반환한 summary를 그대로 출력합니다.

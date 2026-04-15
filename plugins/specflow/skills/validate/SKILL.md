@@ -3,68 +3,44 @@ name: validate
 description: 단일 명세서 문서를 품질 기준에 따라 검증합니다. "검증", "리뷰", "체크" 요청 시 사용.
 argument-hint: [검증할 문서 파일 경로]
 disable-model-invocation: true
-context: fork
-allowed-tools: Read Grep Glob Write
-model: claude-opus-4-6
-effort: max
+allowed-tools: Read Agent
 ---
 
-# 단일 문서 검증 (V1)
+# 단일 문서 검증 (V1) — 에이전트 디스패처
 
-ultrathink
-
-당신은 독립적인 검증자(Validator)입니다.
-
-## ★ 격리 원칙 ★
-
-이 스킬은 `context: fork`로 격리된 세션에서 동작합니다.
-
-**당신이 아는 것:** 검증 대상 문서, 품질 기준, 문서 컨벤션
-**당신이 모르는 것:** 생성 과정, 의도적 누락 여부, 이전 findings, 사람 코멘트
-
-문서에 Out of Scope으로 기록되어 있지 않으면 누락입니다.
-관대하게 해석하지 마세요.
-
-## 공통 컨텍스트 로드
-
-- **문서 컨벤션**: `${CLAUDE_SKILL_DIR}/../../context/conventions.md` 를 Read로 읽으세요
+이 스킬은 클린룸 검증 에이전트를 호출하는 디스패처입니다.
+직접 검증을 수행하지 않습니다. 모든 판단은 격리된 에이전트가 합니다.
 
 ## 입력 처리
 
-$ARGUMENTS 문서를 Read로 읽고, ID 접두사로 유형 판별 후 규칙 로드:
+1. $ARGUMENTS 에서 문서 경로를 추출합니다
+2. 문서 첫 10줄을 Read로 읽어 `문서 ID:` 필드에서 접두사를 파악합니다
+3. 접두사에 따라 규칙 파일 경로를 결정합니다:
 
-- `FS-` → `${CLAUDE_SKILL_DIR}/rules/fs-rules.md`
-- `WF-` → `${CLAUDE_SKILL_DIR}/rules/wf-rules.md`
-- `TS-` → `${CLAUDE_SKILL_DIR}/rules/ts-rules.md`
-- `UI-` → `${CLAUDE_SKILL_DIR}/rules/ui-rules.md`
-- `QA-` → `${CLAUDE_SKILL_DIR}/rules/qa-rules.md`
+| 접두사 | 규칙 파일 |
+|--------|----------|
+| FS- | `${CLAUDE_SKILL_DIR}/rules/fs-rules.md` |
+| WF- | `${CLAUDE_SKILL_DIR}/rules/wf-rules.md` |
+| TS- | `${CLAUDE_SKILL_DIR}/rules/ts-rules.md` |
+| UI- | `${CLAUDE_SKILL_DIR}/rules/ui-rules.md` |
+| QA- | `${CLAUDE_SKILL_DIR}/rules/qa-rules.md` |
 
-## 출력 형식
+## 에이전트 호출
 
-```yaml
-검증 대상: {문서 ID}
-검증 일시: {시각}
-검증 유형: V1 (단일 문서)
+Agent 도구로 `specflow:validator-single` 에이전트를 호출합니다.
 
-findings:
-  - id: "V1-001"
-    severity: critical | warning | info
-    location: "{참조 ID 또는 섹션}"
-    issue: "{문제}"
-    suggestion: "{수정 제안}"
+프롬프트 구성:
 
-summary:
-  total_findings: {N}
-  critical: {N}
-  warning: {N}
-  info: {N}
-  pass: {true | false}  # critical == 0이면 pass
+```
+검증 공통 원칙: ${CLAUDE_SKILL_DIR}/../../context/validation-common.md
+문서 컨벤션: ${CLAUDE_SKILL_DIR}/../../context/conventions.md
+검증 규칙: {위에서 결정한 규칙 파일의 절대 경로}
+검증 대상: {$ARGUMENTS의 문서 절대 경로}
+결과 저장: specs/reviews/{문서ID}-V1-{timestamp}.md
 ```
 
-## Severity 기준
+timestamp 형식: `YYYYMMDD-HHmmss`
 
-- **critical**: 하위 산출물에 결함 전파됨
-- **warning**: 품질 저하, 즉각적 전파는 제한적
-- **info**: 개선 권장, 필수 아님
+## 결과 전달
 
-## 저장: specs/reviews/{문서ID}-V1-{timestamp}.md
+에이전트가 반환한 summary를 그대로 출력합니다.
