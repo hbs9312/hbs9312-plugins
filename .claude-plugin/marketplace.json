@@ -11,8 +11,8 @@
   "plugins": [
     {
       "name": "specflow",
-      "version": "1.3.0",
-      "description": "에이전트 기반 개발 명세서 생성·검증·수정 워크플로우. PRD에서 기능 명세, 기술 명세, 와이어프레임, 화면설계서, 테스트 명세, 구현 계획까지 자동 생성합니다.",
+      "version": "1.5.0",
+      "description": "에이전트 기반 개발 명세서 생성·검증·수정·확장 워크플로우. PRD에서 기능 명세, 기술 명세, 와이어프레임, 화면설계서, 테스트 명세, 구현 계획까지 자동 생성하고, 사용자 피드백 반영(revise) 및 새 요구사항 추가(extend)를 지원합니다.",
       "author": {
         "name": "hbs9312"
       },
@@ -29,7 +29,7 @@
     },
     {
       "name": "backflow",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "specflow 산출물 기반 백엔드 구현 워크플로우. 스키마, 리포지토리, 서비스, 컨트롤러, 미들웨어, 통합까지 바텀업으로 구축합니다.",
       "author": {
         "name": "hbs9312"
@@ -47,8 +47,8 @@
     },
     {
       "name": "ghflow",
-      "version": "0.2.1",
-      "description": "GitHub 이슈·PR·리뷰 워크플로우 스킬 모음 (create-issue, pick-issue, draft-pr, create-pr, review-pr, clear-issue). SessionStart 훅이 이슈/PR 템플릿을 미리 받아둡니다.",
+      "version": "0.3.0",
+      "description": "GitHub 이슈·PR·리뷰를 잇는 워크플로우 스킬 모음. pick-issue → draft-pr → create-pr → review-pr → clear-issue 흐름과 create-issue, list-work까지 7개 스킬을 제공합니다. SessionStart 훅으로 현재 레포와 조직 .github 레포의 이슈/PR 템플릿을 미리 받아두고 스킬에서 재사용합니다.",
       "author": {
         "name": "hbs9312"
       },
