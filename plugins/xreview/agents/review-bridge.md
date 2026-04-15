@@ -110,34 +110,76 @@ severity 기준:
 
 1. 구성된 리뷰 프롬프트를 임시 파일에 저장합니다:
    ```bash
-   /tmp/xreview-prompt-{timestamp}.md
+   /tmp/xreview-prompt-<ts>.md
    ```
+   `<ts>`는 `date +%s%N` 또는 유사한 유니크 타임스탬프.
 
 2. CLI 도구별 실행 명령:
 
-**codex** (기본):
+**codex** (기본 — 시스템 PATH의 codex CLI 직접 호출):
 
-1순위 — codex 플러그인의 companion script 사용(설치 시):
+존재 확인:
 ```bash
-# codex 플러그인 경로 탐색
-CODEX_SCRIPT=$(ls -td /Users/*/.claude/plugins/{marketplaces/openai-codex/plugins/codex,cache/openai-codex/codex/*}/scripts/codex-companion.mjs 2>/dev/null | head -1)
-
-if [ -n "$CODEX_SCRIPT" ]; then
-  node "$CODEX_SCRIPT" task --model "{cli_model}" "$(cat /tmp/xreview-prompt-{timestamp}.md)"
-fi
+command -v codex
 ```
-- `--model` 미지정 시 플래그 생략
-- 리뷰 작업이므로 `--write`는 추가하지 않습니다(읽기 전용)
-- companion은 출력을 렌더링하여 stdout으로 반환합니다
+없으면 `tool: "failed"`, `error: "codex not installed"`로 **즉시 중단** (자체 리뷰로 폴백 금지).
 
-2순위 — codex CLI 직접 호출(companion script 미존재 시):
+비인터랙티브 실행 (기본 경로):
 ```bash
-codex exec --quiet --model "{cli_model}" --sandbox read-only "$(cat /tmp/xreview-prompt-{timestamp}.md)"
+cat /tmp/xreview-prompt-<ts>.md | codex exec \
+  --sandbox read-only \
+  --skip-git-repo-check \
+  --color never \
+  --output-last-message /tmp/xreview-output-<ts>.txt \
+  -
 ```
-- `exec`: 비인터랙티브 실행
-- `--quiet`: 진행 표시 억제
-- `--sandbox read-only`: 파일 수정 차단 (리뷰 목적이므로)
-- `cli_model` 미지정 시 `--model` 플래그 생략
+
+`cli_model`이 지정된 경우 `-m "<model>"` 플래그를 추가합니다:
+```bash
+cat /tmp/xreview-prompt-<ts>.md | codex exec \
+  --sandbox read-only \
+  --skip-git-repo-check \
+  --color never \
+  -m "<cli_model>" \
+  --output-last-message /tmp/xreview-output-<ts>.txt \
+  -
+```
+
+플래그 설명:
+- `--sandbox read-only`: 파일 수정 차단 (리뷰 목적)
+- `--skip-git-repo-check`: 리뷰 대상이 git 외부여도 실행 허용
+- `--color never`: ANSI 이스케이프 코드 제거 (파싱 안정성)
+- `--output-last-message <file>`: 모델의 최종 응답만 별도 파일로 기록
+- `-`: stdin으로부터 프롬프트 읽기
+
+응답 수집:
+```bash
+cat /tmp/xreview-output-<ts>.txt
+```
+이 파일의 내용이 모델의 실제 리뷰 응답입니다. Step 4에서 파싱합니다.
+
+**codex companion 스크립트 (선택적 — 필요 시)**
+
+codex 플러그인의 고급 출력 렌더링이 필요하면 companion script를 사용할 수 있습니다.
+**반드시 본인 홈 디렉토리 내에서만** 탐색하세요:
+
+Glob 도구로 탐색 (권장):
+```
+Glob(
+  pattern="cache/openai-codex/codex/*/scripts/codex-companion.mjs",
+  path="$HOME/.claude/plugins"
+)
+```
+`$HOME`은 에이전트 환경의 `HOME` 환경변수 값으로 치환하여 절대 경로로 변환합니다.
+
+또는 bash로 홈 범위 내 탐색:
+```bash
+ls -t "$HOME"/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | head -1
+```
+
+**금지 패턴**:
+- `/Users/*/...` 같이 다른 사용자 홈을 포함할 수 있는 glob은 샌드박스 정책에 의해 **사전 차단**됩니다.
+- `CODEX_SCRIPT`, `codex_script` 등 "플러그인 스크립트 실행 의도"로 해석될 수 있는 변수명도 피하세요. 필요하면 `target_bin`, `helper_path` 같은 중립적 이름을 사용합니다.
 
 **기타 CLI 도구**:
 - 스폰 프롬프트에서 `cli_tool`과 함께 호출 패턴이 명시되면 그대로 따릅니다.
@@ -146,8 +188,8 @@ codex exec --quiet --model "{cli_model}" --sandbox read-only "$(cat /tmp/xreview
 #### 실행 제약
 
 - 타임아웃: 최대 300초 (5분). 초과 시 타임아웃 에러 보고.
-- CLI 도구가 설치되어 있지 않으면 에러를 보고하고 중단합니다.
-- CLI 실행 전 `which {cli_tool}` 또는 `command -v {cli_tool}`로 존재 확인.
+- CLI 도구가 설치되어 있지 않으면 **즉시 실패 반환**하고 중단합니다.
+- **절대 금지**: 어떤 이유로든 CLI 호출이 실패하거나 차단되면, Sonnet 자체 추론으로 리뷰를 생성해 반환하지 마세요. 이는 "codex로 리뷰했다"고 주장하는 거짓 응답이 됩니다. 반드시 `tool: "failed"` 또는 `tool: "blocked"` 상태로 실패를 보고합니다.
 
 ### Step 4: 결과 정규화
 
@@ -193,18 +235,35 @@ review_result:
 
 ## 에러 처리
 
-| 상황 | 대응 |
-|------|------|
-| CLI 도구 미설치 | `error: {tool} not found. 설치 후 재시도하세요.` 반환 |
-| 파일 읽기 실패 | 해당 파일 건너뛰고 findings에 warning 추가 |
-| CLI 실행 실패 (exit code != 0) | stderr 포함하여 에러 보고 |
-| CLI 타임아웃 | 타임아웃 사실과 부분 출력(있으면) 보고 |
-| CLI 출력 파싱 불가 | 원본 출력을 그대로 `raw_output` 필드에 포함하여 반환 |
+| 상황 | `tool` 필드 값 | 대응 |
+|------|---------------|------|
+| CLI 도구 미설치 | `failed` | `error: "{tool} not installed"` 반환 후 중단 |
+| 파일 읽기 실패 | (정상 진행) | 해당 파일 건너뛰고 `warnings`에 메시지 추가 |
+| CLI 실행 실패 (exit ≠ 0) | `failed` | stderr 포함하여 보고 |
+| CLI 타임아웃 | `failed` | `error: "timeout after Ns"` |
+| 샌드박스/권한 차단 | `blocked` | 차단 메시지 그대로 전달 |
+| CLI 출력 파싱 불가 | `codex`(또는 실제 CLI명) | 원본 출력을 `raw_output` 필드에 포함 |
 
-## 금지 사항
+### 실패 시 출력 형식
+
+```yaml
+review_result:
+  tool: "failed" | "blocked"
+  model: null
+  perspective: "{리뷰 관점}"
+  files_reviewed: ["..."]
+  error: "{실패 사유와 stderr/차단 메시지}"
+  summary: null
+  findings: []
+  verdict: "error"
+  counts: {total: 0, critical: 0, warning: 0, info: 0}
+```
+
+## 금지 사항 (절대 위반하지 말 것)
 
 - 리뷰 대상 파일을 수정하지 마세요.
 - CLI 출력의 findings를 약화하거나 삭제하지 마세요.
 - 메인 세션의 의도를 추측하여 리뷰를 조정하지 마세요.
 - 외부 LLM이 보고하지 않은 findings를 추가하지 마세요.
-- CLI 실행 실패 시 자체적으로 리뷰를 대신 수행하지 마세요.
+- **CLI 실행이 실패·차단되었을 때 자체 추론으로 리뷰를 생성하지 마세요.** 이는 "codex로 리뷰했다"고 주장하는 거짓 응답이 됩니다. 반드시 `tool: "failed"` 또는 `tool: "blocked"`로 실패를 보고하고 `findings: []`로 둡니다. 메인 세션은 이 응답을 보고 재시도 여부를 결정합니다.
+- `/Users/*/` 같은 전역 사용자 홈 glob을 사용하지 마세요. 반드시 `$HOME/` 또는 절대 경로로 제한합니다.
