@@ -17,6 +17,7 @@ ultrathink
 ## 컨텍스트 로드
 
 - **프로젝트 설정**: [backend.md](../../context/backend.md)
+- **태스크-파일 맵**: `.backflow/task-file-map.md` (있으면)
 
 ## 입력
 
@@ -62,6 +63,11 @@ specflow V 스킬처럼 `context: fork`하지 않습니다.
 리포지토리 침범:
   - 리포지토리에 비즈니스 로직이 있는가
   - 리포지토리에서 다른 리포지토리를 직접 호출하는가
+
+맵 대조 (task-file-map.md 있을 때):
+  - 생성/수정된 파일이 맵에 선언된 파일과 일치하는가
+  - 맵의 responsibility.should_not에 해당하는 코드가 파일에 없는가
+  - 맵에 없는 파일이 생성되지 않았는가
 ```
 
 ### 3. 에러 핸들링 (critical)

@@ -18,6 +18,7 @@ B1에서 생성한 스키마에 대한 데이터 접근 계층을 구현합니�
 
 - **프로젝트 설정**: [backend.md](../../context/backend.md) — database, structure
 - 기존 코드 레지스트리: `.backflow/service-registry.md` (있으면)
+- **태스크-파일 맵**: `.backflow/task-file-map.md` (있으면) — 이 스킬이 담당하는 파일 목록
 
 ## 입력
 
@@ -27,6 +28,18 @@ $ARGUMENTS 의 기술 명세서(TS) → Read.
 추가로 자동 탐색:
 - B1에서 생성한 스키마 파일 (엔티티 구조 확인)
 - backend.md의 `repository_dir` → 기존 리포지토리 확인
+
+## 태스크-파일 맵 준수
+
+`.backflow/task-file-map.md`가 존재하면:
+1. `impl_skill: impl-repositories` 항목만 필터
+2. `action: create` → 해당 경로에 새 파일 생성
+3. `action: modify` → 해당 경로의 기존 파일 수정
+4. `responsibility.should` → 이 파일에서 구현할 범위
+5. `responsibility.should_not` → 이 파일에서 하지 않을 것
+6. 맵에 없는 파일은 생성하지 않음 (맵 누락이 의심되면 경고 출력)
+
+맵이 없으면 기존 로직대로 독자 판단.
 
 ## ★ 재사용 판단 — 가장 먼저 실행 ★
 

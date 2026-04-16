@@ -17,11 +17,24 @@ TS에 명시된 외부 서비스 연동을 구현합니다.
 ## 컨텍스트 로드
 
 - **프로젝트 설정**: [backend.md](../../context/backend.md) — external_services
+- **태스크-파일 맵**: `.backflow/task-file-map.md` (있으면) — 이 스킬이 담당하는 파일 목록
 
 ## 입력
 
 $ARGUMENTS 의 기술 명세서(TS) → Read.
 인프라, 비동기 처리, 외부 호출 관련 섹션이 주 입력입니다.
+
+## 태스크-파일 맵 준수
+
+`.backflow/task-file-map.md`가 존재하면:
+1. `impl_skill: impl-integrations` 항목만 필터
+2. `action: create` → 해당 경로에 새 파일 생성
+3. `action: modify` → 해당 경로의 기존 파일 수정
+4. `responsibility.should` → 이 파일에서 구현할 범위
+5. `responsibility.should_not` → 이 파일에서 하지 않을 것
+6. 맵에 없는 파일은 생성하지 않음 (맵 누락이 의심되면 경고 출력)
+
+맵이 없으면 기존 로직대로 독자 판단.
 
 ## ★ B3/B4 시뮬레이션 교체 ★
 

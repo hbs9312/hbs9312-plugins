@@ -10,6 +10,7 @@ tools:
   - Grep
   - Glob
 skills:
+  - map-tasks
   - impl-schema
   - impl-repositories
   - impl-services
@@ -60,6 +61,11 @@ skills:
 ### Phase 0: 준비
 ```
 /backflow:scan-codebase                     # BU1: 기존 코드 파악
+/backflow:map-tasks [태스크 파일 경로] [TS 경로]  # BM: 태스크→파일 매핑
+→ `.backflow/task-file-map.md` 생성
+→ 사람 확인: "태스크-파일 매핑을 확인해주세요.
+   특히: 파일 경로, 계층 분류, 책임 경계"
+→ 승인 → Phase 1
 ```
 
 ### Phase 1: 데이터베이스 스키마

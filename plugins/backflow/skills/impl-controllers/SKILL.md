@@ -17,6 +17,7 @@ TS의 API 설계 섹션을 컨트롤러/라우트 코드로 구현합니다.
 ## 컨텍스트 로드
 
 - **프로젝트 설정**: [backend.md](../../context/backend.md) — api, auth, error_handling
+- **태스크-파일 맵**: `.backflow/task-file-map.md` (있으면) — 이 스킬이 담당하는 파일 목록
 
 ## 입력
 
@@ -26,6 +27,18 @@ $ARGUMENTS 의 기술 명세서(TS) → Read.
 추가로 자동 탐색:
 - B3에서 생성한 서비스 파일 (메서드 시그니처 확인)
 - backend.md의 `controller_dir` → 기존 컨트롤러 확인
+
+## 태스크-파일 맵 준수
+
+`.backflow/task-file-map.md`가 존재하면:
+1. `impl_skill: impl-controllers` 항목만 필터
+2. `action: create` → 해당 경로에 새 파일 생성
+3. `action: modify` → 해당 경로의 기존 파일 수정
+4. `responsibility.should` → 이 파일에서 구현할 범위
+5. `responsibility.should_not` → 이 파일에서 하지 않을 것
+6. 맵에 없는 파일은 생성하지 않음 (맵 누락이 의심되면 경고 출력)
+
+맵이 없으면 기존 로직대로 독자 판단.
 
 ## ★ 컨트롤러의 책임 ★
 
