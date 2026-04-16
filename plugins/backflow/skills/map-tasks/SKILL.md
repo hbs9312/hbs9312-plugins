@@ -125,6 +125,39 @@ backend.md의 `module_pattern`에 따라 경로 생성:
 - `action: modify` 파일 → Glob으로 실제 존재 확인. 없으면 경고
 - `action: create` 파일 → Glob으로 미존재 확인. 이미 있으면 `action: modify`로 변경
 
+### Step 8: 커밋 계획 생성
+
+task_map의 파일들을 Phase(계층) 단위로 그룹화한 뒤, 각 Phase 내에서 커밋 단위를 분리합니다.
+
+#### Phase-계층 매핑
+
+| 계층 | Phase | impl 스킬 |
+|------|-------|----------|
+| schema | phase_1 | impl-schema |
+| repository | phase_2 | impl-repositories |
+| service | phase_3 | impl-services |
+| controller + dto | phase_4 | impl-controllers |
+| middleware | phase_5 | impl-middleware |
+| integration | phase_6 | impl-integrations |
+
+#### 커밋 분리 기준
+
+| Phase | 분리 규칙 |
+|-------|----------|
+| phase_1 | 모델+마이그레이션=1커밋, DTO 별도 |
+| phase_2 | 신규 리포지토리 1개=1커밋, 기존 수정은 묶음 |
+| phase_3 | 서비스 1개=1커밋 (관련 예외/유틸 포함) |
+| phase_4 | 엔드포인트 추가 단위=1커밋 |
+| phase_5 | 전체=1커밋 |
+| phase_6 | 전체=1커밋 |
+
+#### 공통 원칙
+
+- 각 커밋이 독립적으로 이해 가능해야 함
+- 신규 파일과 기존 파일 수정은 가능한 한 분리
+- 단일 파일 Phase는 1커밋
+- 커밋 메시지 형식: `{layer}: {변경 요약}`
+
 ## 출력
 
 ```yaml
@@ -166,6 +199,19 @@ summary:
   total_files: {N}
   by_action: { create: N, modify: N }
   by_layer: { schema: N, repository: N, service: N, controller: N, dto: N, middleware: N, integration: N }
+
+commit_plan:
+  phase_1:
+    - commit: "schema: add speakers table and migration"
+      files: ["src/entities/speaker.entity.ts", "src/migrations/..."]
+      tasks: [TASK-001]
+  phase_3:
+    - commit: "service: implement SpeakerEnrollmentService"
+      files: ["src/services/speaker-enrollment.service.ts"]
+      tasks: [TASK-003]
+    - commit: "service: implement SpeakerQueryService"
+      files: ["src/services/speaker-query.service.ts"]
+      tasks: [TASK-004]
 ```
 
 ## 저장: `.backflow/task-file-map.md`
@@ -179,3 +225,7 @@ summary:
 - [ ] 각 파일에 `responsibility` 경계가 정의되었는가
 - [ ] 계층 분류가 TS 섹션과 일치하는가
 - [ ] frontend/infra/ml/qa 타입 태스크가 backend 매핑에 포함되지 않았는가
+- [ ] commit_plan의 모든 파일이 task_map에 존재하는가
+- [ ] task_map의 모든 파일이 commit_plan에 포함되었는가
+- [ ] 각 커밋 단위가 독립적으로 이해 가능한가
+- [ ] Phase별 커밋 분리 기준을 준수하는가
