@@ -61,71 +61,108 @@ skills:
 ### Phase 0: 준비
 ```
 /backflow:scan-codebase                     # BU1: 기존 코드 파악
-/backflow:map-tasks [태스크 파일 경로] [TS 경로]  # BM: 태스크→파일 매핑
-→ `.backflow/task-file-map.md` 생성
+/backflow:map-tasks [태스크 파일 경로] [TS 경로]  # BM: 태스크→파일 매핑 + 커밋 계획
+→ `.backflow/task-file-map.md` 생성 (task_map + commit_plan)
 → 사람 확인: "태스크-파일 매핑을 확인해주세요.
-   특히: 파일 경로, 계층 분류, 책임 경계"
+   특히: 파일 경로, 계층 분류, 책임 경계, 커밋 단위 분리"
 → 승인 → Phase 1
 ```
 
 ### Phase 1: 데이터베이스 스키마
 ```
-/backflow:impl-schema [TS 경로]
-/backflow:validate-code [스키마/마이그레이션 파일 경로]
-→ 사람 확인: "스키마와 마이그레이션을 확인해주세요.
-   특히: 인덱스, 제약 조건, FK 삭제 정책"
-→ 승인 → Phase 2
+commit_plan.phase_1 로드 (.backflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_1:
+  /backflow:impl-schema [TS 경로] → commit_unit.files 범위만 구현
+  /backflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     확인해주세요. 특히: 인덱스, 제약 조건, FK 삭제 정책"
+  → 승인 → /commit
+
+Phase 1 완료 → Phase 2
 ```
 
 ### Phase 2: 리포지토리 / 데이터 접근 계층
 ```
-/backflow:impl-repositories [TS 경로]
-/backflow:validate-code [리포지토리 파일 경로]
-/backflow:generate-tests [리포지토리 파일 경로] --type unit
-→ 사람 확인: "리포지토리 메서드와 쿼리를 확인해주세요.
-   특히: N+1 쿼리 여부, 트랜잭션 범위"
-→ 승인 → Phase 3
+commit_plan.phase_2 로드 (.backflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_2:
+  /backflow:impl-repositories [TS 경로] → commit_unit.files 범위만 구현
+  /backflow:validate-code [commit_unit.files]
+  /backflow:generate-tests [commit_unit.files] --type unit
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     확인해주세요. 특히: N+1 쿼리 여부, 트랜잭션 범위"
+  → 승인 → /commit
+
+Phase 2 완료 → Phase 3
 ```
 
 ### Phase 3: 서비스 / 비즈니스 로직
 ```
-/backflow:impl-services [FS 경로] [TS 경로]
-/backflow:validate-code [서비스 파일 경로]
-/backflow:generate-tests [서비스 파일 경로] --type unit
-→ 사람 확인: "비즈니스 룰 구현을 확인해주세요.
-   특히: BR 매핑, 에러 분기, 트랜잭션"
-→ 승인 → Phase 4
+commit_plan.phase_3 로드 (.backflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_3:
+  /backflow:impl-services [FS 경로] [TS 경로] → commit_unit.files 범위만 구현
+  /backflow:validate-code [commit_unit.files]
+  /backflow:generate-tests [commit_unit.files] --type unit
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     확인해주세요. 특히: BR 매핑, 에러 분기, 트랜잭션"
+  → 승인 → /commit
+
+Phase 3 완료 → Phase 4
 ```
 
 ### Phase 4: 컨트롤러 / API 엔드포인트
 ```
-/backflow:impl-controllers [TS 경로]
-/backflow:validate-code [컨트롤러 파일 경로]
-/backflow:validate-api [TS 경로]
-/backflow:generate-tests [컨트롤러 파일 경로] --type integration
-→ 사람 확인: "API 엔드포인트를 테스트해주세요.
-   특히: 요청/응답 스키마, 상태 코드, 에러 응답"
-→ 승인 → Phase 5
+commit_plan.phase_4 로드 (.backflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_4:
+  /backflow:impl-controllers [TS 경로] → commit_unit.files 범위만 구현
+  /backflow:validate-code [commit_unit.files]
+  /backflow:validate-api [TS 경로]
+  /backflow:generate-tests [commit_unit.files] --type integration
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     확인해주세요. 특히: 요청/응답 스키마, 상태 코드, 에러 응답"
+  → 승인 → /commit
+
+Phase 4 완료 → Phase 5
 ```
 
 ### Phase 5: 미들웨어 / 횡단 관심사
 ```
-/backflow:impl-middleware [TS 경로] [FS 경로]
-/backflow:validate-code [미들웨어 파일 경로]
-→ 사람 확인: "인증/인가, 검증, 에러 핸들링을 확인해주세요.
-   특히: 가드 적용 범위, 에러 응답 형식 일관성"
-→ 승인 → Phase 6
+commit_plan.phase_5 로드 (.backflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_5:
+  /backflow:impl-middleware [TS 경로] [FS 경로] → commit_unit.files 범위만 구현
+  /backflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     확인해주세요. 특히: 가드 적용 범위, 에러 응답 형식 일관성"
+  → 승인 → /commit
+
+Phase 5 완료 → Phase 6
 ```
 
 ### Phase 6: 외부 서비스 통합
 ```
-/backflow:impl-integrations [TS 경로]
-/backflow:validate-code [통합 관련 파일 경로]
-/backflow:generate-tests [통합 관련 파일 경로] --type integration
-→ 사람 확인: "외부 서비스 연동을 테스트해주세요.
-   특히: 타임아웃, 재시도, 실패 경로"
-→ 승인 → 완료
+commit_plan.phase_6 로드 (.backflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_6:
+  /backflow:impl-integrations [TS 경로] → commit_unit.files 범위만 구현
+  /backflow:validate-code [commit_unit.files]
+  /backflow:generate-tests [commit_unit.files] --type integration
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     확인해주세요. 특히: 타임아웃, 재시도, 실패 경로"
+  → 승인 → /commit
+
+Phase 6 완료 → 완료
 ```
+
+## 커밋 단위 실행 규칙
+
+1. **commit_plan 로드**: 각 Phase 시작 시 `.backflow/task-file-map.md`의 `commit_plan.phase_N`을 읽는다
+2. **scope 제한**: impl-* 스킬 호출 시 commit_unit.files에 포함된 파일만 구현/수정한다
+3. **fallback**: commit_plan이 없거나 해당 Phase 항목이 비어 있으면 Phase 전체를 단일 커밋으로 처리 (기존 동작)
+4. **수정 요청**: 사람이 커밋 단위 리뷰에서 수정 요청 시, 해당 커밋 범위 파일만 수정 → 재검증 → 재리뷰
 
 ## 수정 흐름
 
@@ -146,12 +183,12 @@ skills:
 backflow 진행 상태
 ──────────────────────────────
 [✅] Phase 0: 준비
-[✅] Phase 1: DB 스키마
-[🔄] Phase 2: 리포지토리 (2/5)
-   ✅ SpeakerRepository
-   🔄 MeetingRepository ← 코드 리뷰 대기
-   ⏳ TranscriptRepository
-   ⏳ ...
+[✅] Phase 1: DB 스키마 (1/1 커밋)
+   ✅ commit 1: "schema: add speakers table and migration"
+[🔄] Phase 2: 리포지토리 (1/3 커밋)
+   ✅ commit 1: "repository: implement SpeakerRepository"
+   🔄 commit 2: "repository: implement MeetingRepository" ← 코드 리뷰 대기
+   ⏳ commit 3: "repository: implement TranscriptRepository"
 [⏳] Phase 3~6: 대기 중
 ──────────────────────────────
 ```

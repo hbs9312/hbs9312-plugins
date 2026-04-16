@@ -10,6 +10,7 @@ tools:
   - Grep
   - Glob
 skills:
+  - map-tasks
   - impl-tokens
   - impl-atoms
   - impl-composites
@@ -51,63 +52,108 @@ skills:
 ```
 /frontflow:scan-codebase                    # FU1: 기존 컴포넌트 파악
 /frontflow:extract-figma [Figma URL] (선택)  # FU2: Figma 데이터 정제
+/frontflow:map-tasks [태스크 파일 경로] [UI 명세 경로] [TS 경로]  # FM: 태스크→파일 매핑 + 커밋 계획
+→ `.frontflow/task-file-map.md` 생성 (task_map + commit_plan)
+→ 사람 확인: "태스크-파일 매핑을 확인해주세요.
+   특히: 파일 경로, 계층 분류, 책임 경계, 커밋 단위 분리"
+→ 승인 → Phase 1
 ```
 
 ### Phase 1: 디자인 토큰
 ```
-/frontflow:impl-tokens [UI 명세 경로]
-/frontflow:validate-code [토큰 파일 경로]
-→ 사람 확인: "토큰 설정을 확인해주세요"
-→ 승인 → Phase 2
+commit_plan.phase_1 로드 (.frontflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_1:
+  /frontflow:impl-tokens [UI 명세 경로] → commit_unit.files 범위만 구현
+  /frontflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     토큰 설정을 확인해주세요."
+  → 승인 → /commit
+
+Phase 1 완료 → Phase 2
 ```
 
-### Phase 2: 원자 컴포넌트 (반복)
+### Phase 2: 원자 컴포넌트
 ```
-UI 명세서에서 원자 컴포넌트 목록 추출
-각 컴포넌트에 대해:
+commit_plan.phase_2 로드 (.frontflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_2:
   /frontflow:extract-figma [컴포넌트 노드] (Figma 있으면)
-  /frontflow:impl-atoms [UI 명세 경로] [컴포넌트명]
+  /frontflow:impl-atoms [UI 명세 경로] → commit_unit.files 범위만 구현
   → Storybook 스토리 자동 생성됨
-  /frontflow:validate-code [컴포넌트 경로]
-  → 사람에게 Storybook 리뷰 요청:
-    "Storybook에서 {컴포넌트}를 열고 Figma와 비교해주세요.
-     특히 확인: {UI 명세 기반 체크포인트}"
-  → 승인 → 다음 컴포넌트
+  /frontflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     Storybook에서 Figma와 비교해주세요."
+  → 승인 → /commit
+
 모든 원자 완료 → Phase 3
 ```
 
-### Phase 3: 복합 컴포넌트 (반복)
+### Phase 3: 복합 컴포넌트
 ```
-Phase 2와 동일 패턴, 의존 순서대로
+commit_plan.phase_3 로드 (.frontflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_3:  (의존 순서대로)
+  /frontflow:extract-figma [컴포넌트 노드] (Figma 있으면)
+  /frontflow:impl-composites [UI 명세 경로] → commit_unit.files 범위만 구현
+  → Storybook 스토리 자동 생성됨
+  /frontflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     Storybook에서 Figma와 비교해주세요."
+  → 승인 → /commit
+
+모든 복합 완료 → Phase 4
 ```
 
 ### Phase 4: 페이지 조립
 ```
-/frontflow:impl-pages [WF 경로] [UI 명세 경로]
-/frontflow:validate-code [페이지 파일들]
-/frontflow:validate-a11y [페이지 경로]
-→ 사람 리뷰: "브라우저에서 페이지를 열고 확인해주세요.
-   모바일/데스크톱 양쪽 확인. Figma 전체 페이지와 비교."
-→ 승인 → Phase 5
+commit_plan.phase_4 로드 (.frontflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_4:
+  /frontflow:impl-pages [WF 경로] [UI 명세 경로] → commit_unit.files 범위만 구현
+  /frontflow:validate-code [commit_unit.files]
+  /frontflow:validate-a11y [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     브라우저에서 확인해주세요. 모바일/데스크톱 양쪽."
+  → 승인 → /commit
+
+Phase 4 완료 → Phase 5
 ```
 
 ### Phase 5: 인터랙션
 ```
-/frontflow:impl-interactions [FS 경로] [UI 명세 경로] [TS 경로]
-/frontflow:validate-code [수정된 파일들]
-→ 사람 리뷰: "모든 상태 전환을 직접 테스트해주세요.
-   확인할 것: {WF 상태 매트릭스 기반 체크리스트}"
-→ 승인 → Phase 6
+commit_plan.phase_5 로드 (.frontflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_5:
+  /frontflow:impl-interactions [FS 경로] [UI 명세 경로] [TS 경로] → commit_unit.files 범위만 구현
+  /frontflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     모든 상태 전환을 직접 테스트해주세요."
+  → 승인 → /commit
+
+Phase 5 완료 → Phase 6
 ```
 
 ### Phase 6: API 통합
 ```
-/frontflow:impl-api-integration [TS 경로]
-/frontflow:validate-code [API 관련 파일들]
-→ 사람 리뷰: "실제 백엔드(또는 MSW)와 연동 테스트.
-   정상 흐름 + 모든 에러 케이스 확인."
-→ 승인 → 완료
+commit_plan.phase_6 로드 (.frontflow/task-file-map.md에서)
+
+for commit_unit in commit_plan.phase_6:
+  /frontflow:impl-api-integration [TS 경로] → commit_unit.files 범위만 구현
+  /frontflow:validate-code [commit_unit.files]
+  → 커밋 리뷰: "{commit_unit.commit} 커밋 준비 완료.
+     실제 백엔드(또는 MSW)와 연동 테스트해주세요."
+  → 승인 → /commit
+
+Phase 6 완료 → 완료
 ```
+
+## 커밋 단위 실행 규칙
+
+1. **commit_plan 로드**: 각 Phase 시작 시 `.frontflow/task-file-map.md`의 `commit_plan.phase_N`을 읽는다
+2. **scope 제한**: impl-* 스킬 호출 시 commit_unit.files에 포함된 파일만 구현/수정한다
+3. **fallback**: commit_plan이 없거나 해당 Phase 항목이 비어 있으면 Phase 전체를 단일 커밋으로 처리 (기존 동작)
+4. **수정 요청**: 사람이 커밋 단위 리뷰에서 수정 요청 시, 해당 커밋 범위 파일만 수정 → 재검증 → 재리뷰
 
 ## 수정 흐름
 
@@ -128,13 +174,13 @@ Phase 2와 동일 패턴, 의존 순서대로
 frontflow 진행 상태
 ──────────────────────────────
 [✅] Phase 0: 준비
-[✅] Phase 1: 토큰 설정
-[🔄] Phase 2: 원자 컴포넌트 (3/7)
-   ✅ StatusIcon
-   ✅ Badge
-   🔄 AudioWaveform ← Storybook 리뷰 대기
-   ⏳ RecordingTimer
-   ⏳ ...
+[✅] Phase 1: 토큰 설정 (1/1 커밋)
+   ✅ commit 1: "tokens: configure design tokens"
+[🔄] Phase 2: 원자 컴포넌트 (2/4 커밋)
+   ✅ commit 1: "atoms: implement StatusIcon + story"
+   🔄 commit 2: "atoms: implement Badge + story" ← Storybook 리뷰 대기
+   ⏳ commit 3: "atoms: implement AudioWaveform + story"
+   ⏳ commit 4: "atoms: implement RecordingTimer + story"
 [⏳] Phase 3~6: 대기 중
 ──────────────────────────────
 ```
