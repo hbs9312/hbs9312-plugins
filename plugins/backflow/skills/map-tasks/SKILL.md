@@ -148,8 +148,8 @@ task_map의 파일들을 Phase(계층) 단위로 그룹화한 뒤, 각 Phase 내
 | phase_2 | 신규 리포지토리 1개=1커밋, 기존 수정은 묶음 |
 | phase_3 | 서비스 1개=1커밋 (관련 예외/유틸 포함) |
 | phase_4 | 엔드포인트 추가 단위=1커밋 |
-| phase_5 | 전체=1커밋 |
-| phase_6 | 전체=1커밋 |
+| phase_5 | 각각 1커밋 (auth guard, error handler, rate limiter 등 항목별) |
+| phase_6 | 각각 1커밋 (메시지 큐, 캐시, 스토리지 등 항목별) |
 
 #### 공통 원칙
 
